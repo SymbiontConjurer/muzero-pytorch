@@ -14,24 +14,27 @@ class DiscreteSupport:
 
 class BaseMuZeroConfig(object):
 
-    def __init__(self,
-                 training_steps: int,
-                 test_interval: int,
-                 test_episodes: int,
-                 checkpoint_interval: int,
-                 max_moves: int,
-                 discount: float,
-                 dirichlet_alpha: float,
-                 num_simulations: int,
-                 batch_size: int,
-                 td_steps: int,
-                 lr_init: float,
-                 lr_decay_rate: float,
-                 lr_decay_steps: float,
-                 window_size: int = int(1e6),
-                 value_loss_coeff: float = 1,
-                 value_support: DiscreteSupport = None,
-                 reward_support: DiscreteSupport = None):
+    def __init__(
+        self,
+        training_steps: int,
+        test_interval: int,
+        test_episodes: int,
+        checkpoint_interval: int,
+        max_moves: int,
+        discount: float,
+        dirichlet_alpha: float,
+        num_simulations: int,
+        batch_size: int,
+        td_steps: int,
+        lr_init: float,
+        lr_decay_rate: float,
+        lr_decay_steps: float,
+        window_size: int = int(1e6),
+        value_loss_coeff: float = 1,
+        value_support: DiscreteSupport = None,
+        reward_support: DiscreteSupport = None,
+        num_unroll_steps: int = 5,
+    ):
 
         # Self-Play
         self.action_space_size = None
@@ -64,10 +67,10 @@ class BaseMuZeroConfig(object):
         self.checkpoint_interval = checkpoint_interval
         self.window_size = window_size
         self.batch_size = batch_size
-        self.num_unroll_steps = 5
+        self.num_unroll_steps = num_unroll_steps
         self.td_steps = td_steps
         self.value_loss_coeff = value_loss_coeff
-        self.device = 'cpu'
+        self.device = "cpu"
         self.exp_path = None  # experiment path
         self.debug = False
         self.model_path = None
@@ -95,8 +98,10 @@ class BaseMuZeroConfig(object):
     def set_game(self, env_name):
         raise NotImplementedError
 
-    def new_game(self, save_video=False, save_path=None, video_callable=None, uid=None) -> Game:
-        """ returns a new instance of the game"""
+    def new_game(
+        self, save_video=False, save_path=None, video_callable=None, uid=None
+    ) -> Game:
+        """returns a new instance of the game"""
         raise NotImplementedError
 
     def get_uniform_network(self):
@@ -107,7 +112,7 @@ class BaseMuZeroConfig(object):
 
     @staticmethod
     def scalar_transform(x):
-        """ Reference : Appendix F => Network Architecture
+        """Reference : Appendix F => Network Architecture
         & Appendix A : Proposition A.2 in https://arxiv.org/pdf/1805.11593.pdf (Page-11)
         """
         epsilon = 0.001
@@ -123,7 +128,7 @@ class BaseMuZeroConfig(object):
         return self.inverse_scalar_transform(value_logits, self.value_support)
 
     def inverse_scalar_transform(self, logits, scalar_support):
-        """ Reference : Appendix F => Network Architecture
+        """Reference : Appendix F => Network Architecture
         & Appendix A : Proposition A.2 in https://arxiv.org/pdf/1805.11593.pdf (Page-11)
         """
         value_probs = torch.softmax(logits, dim=1)
@@ -135,22 +140,32 @@ class BaseMuZeroConfig(object):
         epsilon = 0.001
         sign = torch.ones(value.shape).float().to(value.device)
         sign[value < 0] = -1.0
-        output = (((torch.sqrt(1 + 4 * epsilon * (torch.abs(value) + 1 + epsilon)) - 1) / (2 * epsilon)) ** 2 - 1)
+        output = (
+            (torch.sqrt(1 + 4 * epsilon * (torch.abs(value) + 1 + epsilon)) - 1)
+            / (2 * epsilon)
+        ) ** 2 - 1
         output = sign * output
         return output
 
     def value_phi(self, x):
-        return self._phi(x, self.value_support.min, self.value_support.max, self.value_support.size)
+        return self._phi(
+            x, self.value_support.min, self.value_support.max, self.value_support.size
+        )
 
     def reward_phi(self, x):
-        return self._phi(x, self.reward_support.min, self.reward_support.max, self.reward_support.size)
+        return self._phi(
+            x,
+            self.reward_support.min,
+            self.reward_support.max,
+            self.reward_support.size,
+        )
 
     @staticmethod
     def _phi(x, min, max, set_size: int):
         x.clamp_(min, max)
         x_low = x.floor()
         x_high = x.ceil()
-        p_high = (x - x_low)
+        p_high = x - x_low
         p_low = 1 - p_high
 
         target = torch.zeros(x.shape[0], x.shape[1], set_size).to(x.device)
@@ -162,7 +177,7 @@ class BaseMuZeroConfig(object):
     def get_hparams(self):
         hparams = {}
         for k, v in self.__dict__.items():
-            if 'path' not in k and (v is not None):
+            if "path" not in k and (v is not None):
                 hparams[k] = v
         return hparams
 
@@ -173,7 +188,7 @@ class BaseMuZeroConfig(object):
         self.use_target_model = args.use_target_model
         self.debug = args.debug
         self.device = args.device
-        self.use_max_priority = (args.use_max_priority and args.use_priority)
+        self.use_max_priority = args.use_max_priority and args.use_priority
         self.num_actors = args.num_actors
 
         if args.value_loss_coeff is not None:
@@ -182,13 +197,17 @@ class BaseMuZeroConfig(object):
         if args.revisit_policy_search_rate is not None:
             self.revisit_policy_search_rate = args.revisit_policy_search_rate
 
-        self.exp_path = os.path.join(args.result_dir, args.case, args.env,
-                                     'revisit_rate_{}'.format(self.revisit_policy_search_rate),
-                                     'val_coeff_{}'.format(self.value_loss_coeff),
-                                     'with_target' if self.use_target_model else 'no_target',
-                                     'with_prio' if args.use_priority else 'no_prio',
-                                     'max_prio' if self.use_max_priority else 'no_max_prio',
-                                     'seed_{}'.format(self.seed))
+        self.exp_path = os.path.join(
+            args.result_dir,
+            args.case,
+            args.env,
+            "revisit_rate_{}".format(self.revisit_policy_search_rate),
+            "val_coeff_{}".format(self.value_loss_coeff),
+            "with_target" if self.use_target_model else "no_target",
+            "with_prio" if args.use_priority else "no_prio",
+            "max_prio" if self.use_max_priority else "no_max_prio",
+            "seed_{}".format(self.seed),
+        )
 
-        self.model_path = os.path.join(self.exp_path, 'model.p')
+        self.model_path = os.path.join(self.exp_path, "model.p")
         return self.exp_path
