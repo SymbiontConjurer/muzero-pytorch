@@ -1,6 +1,6 @@
 from typing import Callable
 
-import gymnasium as gym
+import gym
 import torch
 
 from core.config import BaseMuZeroConfig, DiscreteSupport
