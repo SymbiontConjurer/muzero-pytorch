@@ -64,7 +64,7 @@ class ClassicControlConfig(BaseMuZeroConfig):
         episode_trigger: Callable[[int], bool] = None,
         uid=None,
     ):
-        env = gym.make(self.env_name, new_step_api=True)
+        env = gym.make(self.env_name)
         if save_video:
             assert save_path is not None, "save_path cannot be None if saving video"
             from gym.wrappers import RecordVideo
@@ -74,7 +74,6 @@ class ClassicControlConfig(BaseMuZeroConfig):
                 video_folder=save_path,
                 episode_trigger=episode_trigger,
                 name_prefix=f"rl-video-{uid}",
-                new_step_api=True,
             )
         return ClassicControlWrapper(env, discount=self.discount, k=4)
 
