@@ -61,16 +61,17 @@ class AtariConfig(BaseMuZeroConfig):
         episode_trigger: Callable[[int], bool] = None,
         uid=None,
     ):
-        env = gym.make(self.env_name)
+        env = gym.make(self.env_name, new_step_api=True)
         if save_video:
             assert save_path is not None, "save_path cannot be None if saving video"
-            from gymnasium.wrappers import RecordVideo
+            from gym.wrappers import RecordVideo
 
             env = RecordVideo(
                 env,
                 video_folder=save_path,
                 episode_trigger=episode_trigger,
                 name_prefix=f"rl-video-{uid}",
+                new_step_api=True,
             )
         return AtariEnvWrapper(env, discount=self.discount, k=4)
 
