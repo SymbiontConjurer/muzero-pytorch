@@ -15,11 +15,11 @@ class ClassicControlConfig(BaseMuZeroConfig):
             test_interval=100,
             test_episodes=5,
             checkpoint_interval=20,
-            max_moves=1000,
+            max_moves=10000,
             discount=0.997,
             dirichlet_alpha=0.25,
             num_simulations=50,
-            batch_size=128,
+            batch_size=512,
             td_steps=5,
             lr_init=0.05,
             lr_decay_rate=0.01,
@@ -27,7 +27,8 @@ class ClassicControlConfig(BaseMuZeroConfig):
             window_size=1000,
             value_loss_coeff=1,
             value_support=DiscreteSupport(-20, 20),
-            reward_support=DiscreteSupport(-5, 5))
+            reward_support=DiscreteSupport(-5, 5),
+        )
 
     def visit_softmax_temperature_fn(self, num_moves, trained_steps):
         if trained_steps < 0.5 * self.training_steps:
@@ -44,16 +45,34 @@ class ClassicControlConfig(BaseMuZeroConfig):
         self.action_space_size = game.action_space_size
 
     def get_uniform_network(self):
-        return MuZeroNet(self.obs_shape, self.action_space_size, self.reward_support.size, self.value_support.size,
-                         self.inverse_value_transform, self.inverse_reward_transform)
+        return MuZeroNet(
+            self.obs_shape,
+            self.action_space_size,
+            self.reward_support.size,
+            self.value_support.size,
+            self.inverse_value_transform,
+            self.inverse_reward_transform,
+        )
 
-    def new_game(self, save_video=False, save_path=None, episode_trigger: Callable[[int], bool] = None, uid=None):
+    def new_game(
+        self,
+        save_video=False,
+        save_path=None,
+        episode_trigger: Callable[[int], bool] = None,
+        uid=None,
+    ):
         env = gym.make(self.env_name, new_step_api=True)
         if save_video:
-            assert save_path is not None, 'save_path cannot be None if saving video'
+            assert save_path is not None, "save_path cannot be None if saving video"
             from gym.wrappers import RecordVideo
-            env = RecordVideo(env, video_folder=save_path, episode_trigger=episode_trigger,
-                              name_prefix=f"rl-video-{uid}", new_step_api=True)
+
+            env = RecordVideo(
+                env,
+                video_folder=save_path,
+                episode_trigger=episode_trigger,
+                name_prefix=f"rl-video-{uid}",
+                new_step_api=True,
+            )
         return ClassicControlWrapper(env, discount=self.discount, k=4)
 
     def scalar_reward_loss(self, prediction, target):
