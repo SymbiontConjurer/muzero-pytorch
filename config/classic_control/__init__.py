@@ -26,8 +26,8 @@ class ClassicControlConfig(BaseMuZeroConfig):
             lr_decay_steps=10000,
             window_size=1000,
             value_loss_coeff=1,
-            value_support=DiscreteSupport(-20, 20),
-            reward_support=DiscreteSupport(-5, 5),
+            value_support=DiscreteSupport(-40, 40),
+            reward_support=DiscreteSupport(-20, 20),
         )
 
     def visit_softmax_temperature_fn(self, num_moves, trained_steps):
