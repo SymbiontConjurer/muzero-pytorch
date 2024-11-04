@@ -14,6 +14,8 @@ class MuZeroNet(BaseMuZeroNet):
         inverse_value_transform,
         inverse_reward_transform,
         hidden_state_size=32,
+        dynamics_hidden_size=64,
+        prediction_hidden_size=64,
     ):
         super(MuZeroNet, self).__init__(
             inverse_value_transform, inverse_reward_transform
@@ -23,23 +25,25 @@ class MuZeroNet(BaseMuZeroNet):
             nn.Linear(input_size, self.hx_size), nn.Tanh()
         )
         self._dynamics_state = nn.Sequential(
-            nn.Linear(self.hx_size + action_space_n, 64),
+            nn.Linear(self.hx_size + action_space_n, dynamics_hidden_size),
             nn.Tanh(),
-            nn.Linear(64, self.hx_size),
+            nn.Linear(dynamics_hidden_size, self.hx_size),
             nn.Tanh(),
         )
         self._dynamics_reward = nn.Sequential(
-            nn.Linear(self.hx_size + action_space_n, 64),
+            nn.Linear(self.hx_size + action_space_n, dynamics_hidden_size),
             nn.LeakyReLU(),
-            nn.Linear(64, reward_support_size),
+            nn.Linear(dynamics_hidden_size, reward_support_size),
         )
         self._prediction_actor = nn.Sequential(
-            nn.Linear(self.hx_size, 64), nn.LeakyReLU(), nn.Linear(64, action_space_n)
+            nn.Linear(self.hx_size, prediction_hidden_size),
+            nn.LeakyReLU(),
+            nn.Linear(prediction_hidden_size, action_space_n),
         )
         self._prediction_value = nn.Sequential(
-            nn.Linear(self.hx_size, 64),
+            nn.Linear(self.hx_size, prediction_hidden_size),
             nn.LeakyReLU(),
-            nn.Linear(64, value_support_size),
+            nn.Linear(prediction_hidden_size, value_support_size),
         )
         self.action_space_n = action_space_n
 
