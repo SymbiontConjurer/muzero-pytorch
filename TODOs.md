@@ -3,3 +3,4 @@
 - Cluster support
 - Update gym to gymnasium
 - Generate videos every N episodes
+- Generate new results directories
