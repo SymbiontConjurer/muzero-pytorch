@@ -26,8 +26,8 @@ class ClassicControlConfig(BaseMuZeroConfig):
             lr_decay_steps=10000,
             window_size=1000,
             value_loss_coeff=1,
-            value_support=DiscreteSupport(-40, 40),
-            reward_support=DiscreteSupport(-20, 20),
+            value_support=DiscreteSupport(-200, 200),
+            reward_support=DiscreteSupport(-100, 100),
         )
 
     def visit_softmax_temperature_fn(self, num_moves, trained_steps):
@@ -52,6 +52,9 @@ class ClassicControlConfig(BaseMuZeroConfig):
             self.value_support.size,
             self.inverse_value_transform,
             self.inverse_reward_transform,
+            hidden_state_size=128,
+            dynamics_hidden_size=256,
+            prediction_hidden_size=256,
         )
 
     def new_game(
